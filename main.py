@@ -1,62 +1,64 @@
-# STEP 1A
-# Import SQL Library and Pandas
-import pandas as pd
 import sqlite3
+import pandas as pd
 
-# STEP 1B
-# Connect to the database
-conn = sqlite3.connect("your_database.db")  # Replace with your .db file name
-
+# STEP 1A & 1B
+conn = sqlite3.connect("data.sqlite")
 
 # STEP 2
-# Retrieve first 5 rows
-df_first_five = pd.read_sql_query("SELECT * FROM your_table LIMIT 5;", conn)
+df_first_five = pd.read_sql_query(
+    "SELECT employeeNumber, lastName FROM employees;", conn
+)
 
 # STEP 3
-# Retrieve 5 rows in reverse order (e.g., by ID)
 df_five_reverse = pd.read_sql_query(
-    "SELECT * FROM your_table ORDER BY id DESC LIMIT 5;", conn
+    "SELECT lastName, employeeNumber FROM employees;", conn
 )
 
 # STEP 4
-# Column aliasing
 df_alias = pd.read_sql_query(
-    "SELECT column_name AS alias_name FROM your_table;", conn
+    "SELECT lastName, employeeNumber AS ID FROM employees;", conn
 )
 
 # STEP 5
-# Filter records for Executive roles
 df_executive = pd.read_sql_query(
-    "SELECT * FROM your_table WHERE title LIKE '%Executive%';", conn
-)
-
-# STEP 6
-# Get length of a name string
-df_name_length = pd.read_sql_query(
-    "SELECT name, LENGTH(name) AS name_length FROM your_table;", conn
-)
-
-# STEP 7
-# Filter for titles shorter than a specific length
-df_short_title = pd.read_sql_query(
-    "SELECT * FROM your_table WHERE LENGTH(title) < 10;", conn
-)
-
-# STEP 8
-# Sum total price aggregate
-sum_total_price = pd.read_sql_query(
-    "SELECT SUM(total_price) AS sum_total_price FROM your_table;", conn
-)
-
-# STEP 9
-# Extract Day, Month, and Year from a date column
-df_day_month_year = pd.read_sql_query(
     """
-    SELECT 
-        strftime('%d', date_column) AS Day,
-        strftime('%m', date_column) AS Month,
-        strftime('%Y', date_column) AS Year
-    FROM your_table;
+    SELECT *,
+        CASE 
+            WHEN jobTitle IN ('President', 'VP Sales', 'VP Marketing') THEN 'Executive'
+            ELSE 'Not Executive'
+        END AS role
+    FROM employees;
 """,
     conn,
 )
+
+# STEP 6
+df_name_length = pd.read_sql_query(
+    "SELECT LENGTH(lastName) AS name_length FROM employees;", conn
+)
+
+# STEP 7
+df_short_title = pd.read_sql_query(
+    "SELECT SUBSTR(jobTitle, 1, 2) AS short_title FROM employees;", conn
+)
+
+# STEP 8
+sum_total_price = pd.read_sql_query(
+    "SELECT ROUND(priceEach * quantityOrdered) FROM orderDetails;",
+    conn
+).sum().reset_index(drop=True)
+
+# STEP 9
+df_day_month_year = pd.read_sql_query(
+    """
+    SELECT orderDate,
+           strftime('%d', orderDate) AS day,
+           strftime('%m', orderDate) AS month,
+           strftime('%Y', orderDate) AS year
+    FROM orders;
+""",
+    conn,
+)
+
+# Close connection
+conn.close()
